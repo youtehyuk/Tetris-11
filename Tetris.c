@@ -1,5 +1,5 @@
 #define _CRT_NONSTDC_NO_WARNINGS
-
+//안녕하세요
 #include <stdio.h>
 #include <conio.h> 
 #include <windows.h>
