@@ -1,7 +1,7 @@
 #define _CRT_NONSTDC_NO_WARNINGS
 
 #include <stdio.h>
-#include <conio.h> 
+#include <conio.h>
 #include <windows.h>
 #include <time.h>
 
@@ -48,7 +48,7 @@ struct Point Shape[][4][4] = {
 };
 
 enum { EMPTY, BRICK, WALL };
-char arTile[3][4] = { ". ","��","��" };
+char arTile[3][4] = { ". ","■","□" };
 int board[BW + 2][BH + 2];
 int nx, ny;
 int brick, rot;
@@ -65,7 +65,7 @@ int main()
 	clrscr();
 	read_file();
 	InitializeGameTime();
-	// �����ڸ��� ��, �������� �� �������� �ʱ�ȭ�Ѵ�.
+	// 가장자리는 벽, 나머지는 빈 공간으로 초기화한다.
 	for (x = 0; x < BW + 2; x++) {
 		for (y = 0; y < BH + 2; y++) {
 			if (y == 0 || y == BH + 1 || x == 0 || x == BW + 1) {
@@ -80,7 +80,7 @@ int main()
 	DrawScreen();
 	nFrame = 20;
 
-	// ��ü ���� ����
+	// 전체 게임 루프
 	for (; 1;) {
 
 		brick = random(sizeof(Shape) / sizeof(Shape[0]));
@@ -92,7 +92,7 @@ int main()
 
 		if (GetAround(nx, ny, brick, rot) != EMPTY) break;
 
-		// ���� �ϳ��� �ٴڿ� ���� �������� ����
+		// 벽돌 하나가 바닥에 닿을 때까지의 루프
 		nStay = nFrame;
 		for (; 2;) {
 			if (--nStay == 0) {
@@ -106,7 +106,7 @@ int main()
 	clrscr();
 	putsxy(30, 12, "G A M E  O V E R");
 	gotoxy(30, 12);
-	printf("���� ����: %d�� �ְ� ���: %d", score, max_score);
+	printf("게임 점수: %d점 최고 기록: %d", score, max_score);
 	showcursor(TRUE);
 }
 
@@ -120,13 +120,13 @@ void DrawScreen()
 
 	read_file();
 	putsxy(50, 3, "Tetris Ver 1.0");
-	putsxy(50, 5, "�¿�:�̵�, ��:ȸ��, �Ʒ�:����");
-	putsxy(50, 6, "����:���� ����");
+	putsxy(50, 5, "좌우:이동, 위:회전, 아래:내림");
+	putsxy(50, 6, "공백:전부 내림");
 	gotoxy(50, 7);
-	printf("���� ����: %d", score);
+	printf("현재 점수: %d", score);
 	//SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 3);
 	gotoxy(50, 8);
-	printf("�ְ� ���: %d", max_score);
+	printf("최고 기록: %d", max_score);
 
 }
 
@@ -181,7 +181,7 @@ BOOL ProcessKey()
 void PrintBrick(BOOL Show)
 {
 	gotoxy(50, 9);
-	printf("���� �ð�: %d��", GetGameTime());
+	printf("게임 시간: %d초", GetGameTime());
 	for (int i = 0; i < 4; i++) {
 		gotoxy(BX + (Shape[brick][rot][i].x + nx) * 2, BY + Shape[brick][rot][i].y + ny);
 		puts(arTile[Show ? BRICK : EMPTY]);
@@ -192,7 +192,7 @@ int GetAround(int x, int y, int b, int r)
 {
 	int k = EMPTY;
 
-	// ������ ������ Ÿ�� ��� �� ���� ū ���� ã�´�.
+	// 벽돌이 차지한 타일 모양 중 가장 큰 값을 찾는다.
 	for (int i = 0; i < 4; i++) {
 		k = max(k, board[x + Shape[b][r][i].x][y + Shape[b][r][i].y]);
 	}
@@ -201,12 +201,12 @@ int GetAround(int x, int y, int b, int r)
 
 BOOL MoveDown()
 {
-	// �ٴڿ� ������� ����á���� �����ϰ� TRUE�� �����Ѵ�.
+	// 바닥에 닿았으면 가득찼는지 점검하고 TRUE를 리턴한다.
 	if (GetAround(nx, ny + 1, brick, rot) != EMPTY) {
 		TestFull();
 		return TRUE;
 	}
-	// ���� ���߿� �� ������ ��ĭ �Ʒ��� ������.
+	// 아직 공중에 떠 있으면 한칸 아래로 내린다.
 	PrintBrick(FALSE);
 	ny++;
 	PrintBrick(TRUE);
@@ -215,12 +215,12 @@ BOOL MoveDown()
 
 void TestFull()
 {
-	// �ٴڿ� �������� ���� ���
+	// 바닥에 내려앉은 벽돌 기록
 	for (int i = 0; i < 4; i++) {
 		board[nx + Shape[brick][rot][i].x][ny + Shape[brick][rot][i].y] = BRICK;
 	}
 
-	// �������� ������ ���� ����
+	// 수평으로 가득찬 벽돌 제거
 	for (int y = 1; y < BH + 1; y++) {
 		BOOL bFull = TRUE;
 		for (int x = 1; x < BW + 1; x++) {
@@ -229,7 +229,7 @@ void TestFull()
 				break;
 			}
 		}
-		// ������ ���� á���� �� ���� �����Ѵ�.
+		// 한줄이 가득 찼으면 이 줄을 제거한다.
 		if (bFull) {
 			for (int ty = y; ty > 1; ty--) {
 				for (int x = 1; x < BW+1; x++) {
@@ -274,7 +274,7 @@ void InitializeGameTime() {
 	startTime = time(NULL);
 }
 
-// ���� ���� ��� �ð��� ��ȯ�ϴ� �Լ�
+// 현재 게임 경과 시간을 반환하는 함수
 int GetGameTime() {
 	time_t currentTime = time(NULL);
 	return (int)(currentTime - startTime);
