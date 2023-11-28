@@ -120,13 +120,13 @@ void DrawScreen()
 
 	read_file();
 	putsxy(50, 3, "Tetris Ver 1.0");
-	putsxy(50, 5, "�¿�:�̵�, ��:ȸ��, �Ʒ�:����");
-	putsxy(50, 6, "����:���� ����");
+	putsxy(50, 5, "좌우:이동, 위:회전, 아래:내림");
+	putsxy(50, 6, "공백:전부 내림");
 	gotoxy(50, 7);
-	printf("���� ����: %d", score);
+	printf("현재 점수: %d", score);
 	//SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 3);
 	gotoxy(50, 8);
-	printf("�ְ� ���: %d", max_score);
+	printf("최고 기록: %d", max_score);
 
 }
 
