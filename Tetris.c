@@ -38,6 +38,7 @@ int GetGameTime();
 void color(int c);
 void playtime();
 void DrawScreenWithColors(int colorsToRemove[][BH + 2]);
+int ControlSpeed(int score);
 
 //블록 자체에 색상을 추가했어요
 struct Point {
@@ -108,7 +109,10 @@ int main()
 				if (MoveDown()) break;
 			}
 			if (ProcessKey()) break;
-			delay(1000 / 20);
+			//n은 하락속도 조절
+
+			int n = ControlSpeed(score);
+			delay(1000 / n);
 		}
 	}
 	clrscr();
@@ -259,7 +263,6 @@ void TestFull()
 				write_file();
 			}
 
-			//DrawScreen();
 			DrawScreenWithColors(colorsList);
 			delay(200);
 		}
@@ -316,7 +319,7 @@ void DrawScreenWithColors(int colorList[BW + 2][BH + 2])
 {
 	color(7);
 	for (int x = 1; x < 11; x++) {
-		for (int y = 0; y < BH + 1; y++) {
+		for (int y = 1; y < BH + 1; y++) {
 			gotoxy(BX + x * 2, BY + y);
 
 			if (colorList[x][y] == 0) {  //!=
@@ -340,4 +343,12 @@ void DrawScreenWithColors(int colorList[BW + 2][BH + 2])
 	printf("난이도: ");
 	gotoxy(30, 6);
 	printf("최고 기록: %d", max_score);
+}
+
+int ControlSpeed(int score) {
+	int speed = 20;
+	if (score > 200) {
+		speed = 100;
+	}
+	return speed;
 }
