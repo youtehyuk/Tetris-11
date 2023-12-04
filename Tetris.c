@@ -15,7 +15,6 @@
 	SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE),&CurInfo); }
 #define BH 20
 
-void DrawScreen();
 
 
 enum { ESC = 27, LEFT = 75, RIGHT = 77, UP = 72, DOWN = 80 };
@@ -26,10 +25,11 @@ enum { ESC = 27, LEFT = 75, RIGHT = 77, UP = 72, DOWN = 80 };
 #define BH 20
 
 BOOL ProcessKey();
-void PrintBrick(BOOL Show, int brick);
+void PrintBrick(BOOL Show);
 int GetAround(int x, int y, int b, int r);
 BOOL MoveDown();
 void TestFull();
+void DrawScreen();
 
 void write_file();
 void read_file();
@@ -37,28 +37,33 @@ void InitializeGameTime();
 int GetGameTime();
 void color(int c);
 void playtime();
+void DrawScreenWithColors(int colorsToRemove[][BH + 2]);
 
+//블록 자체에 색상을 추가했어요
 struct Point {
 	int x, y;
+	int color;
 };
+
 struct Point Shape[][4][4] = {
-	{ { 0,0,1,0,2,0,-1,0 },{ 0,0,0,1,0,-1,0,-2 },{ 0,0,1,0,2,0,-1,0 },{ 0,0,0,1,0,-1,0,-2 } },
-	{ { 0,0,1,0,0,1,1,1 },{ 0,0,1,0,0,1,1,1 },{ 0,0,1,0,0,1,1,1 },{ 0,0,1,0,0,1,1,1 } },
-	{ { 0,0,-1,0,0,-1,1,-1 },{ 0,0,0,1,-1,0,-1,-1 },{ 0,0,-1,0,0,-1,1,-1 },{ 0,0,0,1,-1,0,-1,-1 } },
-	{ { 0,0,-1,-1,0,-1,1,0 },{ 0,0,-1,0,-1,1,0,-1 },{ 0,0,-1,-1,0,-1,1,0 },{ 0,0,-1,0,-1,1,0,-1 } },
-	{ { 0,0,-1,0,1,0,-1,-1 },{ 0,0,0,-1,0,1,-1,1 },{ 0,0,-1,0,1,0,1,1 },{ 0,0,0,-1,0,1,1,-1 } },
-	{ { 0,0,1,0,-1,0,1,-1 },{ 0,0,0,1,0,-1,-1,-1 },{ 0,0,1,0,-1,0,-1,1 },{ 0,0,0,-1,0,1,1,1 } },
-	{ { 0,0,-1,0,1,0,0,1 },{ 0,0,0,-1,0,1,1,0 },{ 0,0,-1,0,1,0,0,-1 },{ 0,0,-1,0,0,-1,0,1 } },
+	{ { 0,0,1,1,0,1,2,0,1,-1,0,1 },{ 0,0,1,0,1,1,0,-1,1,0,-2,1 },{ 0,0,1,1,0,1,2,0,1,-1,0,1 },{ 0,0,1,0,1,1,0,-1,1,0,-2 ,1} },
+	{ { 0,0,2,1,0,2,0,1,2,1,1,2 },{ 0,0,2,1,0,2,0,1,2,1,1,2 },{ 0,0,2,1,0,2,0,1,2,1,1,2 },{ 0,0,2,1,0,2,0,1,2,1,1,2 } },
+	{ { 0,0,3,-1,0,3,0,-1,3,1,-1,3 },{ 0,0,3,0,1,3,-1,0,3,-1,-1,3 },{ 0,0,3,-1,0,3,0,-1,3,1,-1,3 },{ 0,0,3,0,1,3,-1,0,3,-1,-1,3 } },
+	{ { 0,0,4,-1,-1,4,0,-1,4,1,0,4 },{ 0,0,4,-1,0,4,-1,1,4,0,-1,4 },{ 0,0,4,-1,-1,4,0,-1,4,1,0,4 },{ 0,0,4,-1,0,4,-1,1,4,0,-1,4 } },
+	{ { 0,0,5,-1,0,5,1,0,5,-1,-1,5 },{ 0,0,5,0,-1,5,0,1,5,-1,1,5 },{ 0,0,5,-1,0,5,1,0,5,1,1,5 },{ 0,0,5,0,-1,5,0,1,5,1,-1,5 } },
+	{ { 0,0,6,1,0,6,-1,0,6,1,-1,6 },{ 0,0,6,0,1,6,0,-1,6,-1,-1,6 },{ 0,0,6,1,0,6,-1,0,6,-1,1,6 },{ 0,0,6,0,-1,6,0,1,6,1,1,6 } },
+	{ { 0,0,8,-1,0,8,1,0,8,0,1,8 },{ 0,0,8,0,-1,8,0,1,8,1,0,8 },{ 0,0,8,-1,0,8,1,0,8,0,-1,8 },{ 0,0,8,-1,0,8,0,-1,8,0,1,8 } },
 };
 
 enum { EMPTY, BRICK, WALL };
 char arTile[3][4] = { "  ","■","□" };
 int board[BW + 2][BH + 2];
 int nx, ny;
-int brick, rot, nb;
+int brick, rot;
 int score = 0, max_score = 0;
 time_t startTime;
-int colors[7] = { 10,11,12,13,14,15,16 };
+int colors[7] = { 0,1,2,3,4,5,6 };
+int colorsList[BW + 2][BH + 2] = { 0 };
 
 int main()
 {
@@ -71,6 +76,8 @@ int main()
 	read_file();
 	InitializeGameTime();
 	system("title Tetris(team11)");
+
+
 	// 가장자리는 벽, 나머지는 빈 공간으로 초기화한다.
 	for (x = 0; x < BW + 2; x++) {
 		for (y = 0; y < BH + 2; y++) {
@@ -90,7 +97,7 @@ int main()
 		nx = 5;
 		ny = 3;
 		rot = 0;
-		PrintBrick(TRUE, brick);
+		PrintBrick(TRUE);
 		if (GetAround(nx, ny, brick, rot) != EMPTY) break;
 
 		// 벽돌 하나가 바닥에 닿을 때까지의 루프
@@ -116,7 +123,10 @@ void DrawScreen()
 	color(7);
 	for (int x = 0; x < BW + 2; x++) {
 		for (int y = 0; y < BH + 2; y++) {
-			putsxy(BX + x * 2, BY + y, arTile[board[x][y]]);
+			color(7);
+			gotoxy(BX + x * 2, BY + y);
+			//putsxy(BX + x * 2, BY + y, arTile[board[x][y]]);
+			printf(arTile[board[x][y]]);
 		}
 	}
 
@@ -128,7 +138,6 @@ void DrawScreen()
 	printf("난이도: ");
 	gotoxy(30, 6);
 	printf("최고 기록: %d", max_score);
-
 }
 
 BOOL ProcessKey()
@@ -140,23 +149,23 @@ BOOL ProcessKey()
 			switch (ch) {
 			case LEFT:
 				if (GetAround(nx - 1, ny, brick, rot) == EMPTY) {
-					PrintBrick(FALSE, brick);
+					PrintBrick(FALSE);
 					nx--;
-					PrintBrick(TRUE, brick);
+					PrintBrick(TRUE);
 				}
 				break;
 			case RIGHT:
 				if (GetAround(nx + 1, ny, brick, rot) == EMPTY) {
-					PrintBrick(FALSE, brick);
+					PrintBrick(FALSE);
 					nx++;
-					PrintBrick(TRUE, brick);
+					PrintBrick(TRUE);
 				}
 				break;
 			case UP:
 				if (GetAround(nx, ny, brick, (rot + 1) % 4) == EMPTY) {
-					PrintBrick(FALSE, brick);
+					PrintBrick(FALSE);
 					rot = (rot + 1) % 4;
-					PrintBrick(TRUE, brick);
+					PrintBrick(TRUE);
 				}
 				break;
 			case DOWN:
@@ -179,15 +188,15 @@ BOOL ProcessKey()
 	return FALSE;
 }
 
-void PrintBrick(BOOL Show, int brick)
-{
+void PrintBrick(BOOL Show) {
 	playtime();
 	for (int i = 0; i < 4; i++) {
-		color(brick);
+		int blockColor = Shape[brick][rot][i].color; // 블록의 색상 정보 가져오기
+		color(blockColor);
 		gotoxy(BX + (Shape[brick][rot][i].x + nx) * 2, BY + Shape[brick][rot][i].y + ny);
 		puts(arTile[Show ? BRICK : EMPTY]);
 	}
-	color(7);
+	color(7); // 기본 텍스트 색상으로 되돌리기
 }
 
 int GetAround(int x, int y, int b, int r)
@@ -209,18 +218,24 @@ BOOL MoveDown()
 		return TRUE;
 	}
 	// 아직 공중에 떠 있으면 한칸 아래로 내린다.
-	PrintBrick(FALSE, brick);
+	PrintBrick(FALSE);
 	ny++;
-	PrintBrick(TRUE, brick);
+	PrintBrick(TRUE);
 	return FALSE;
 }
 
 void TestFull()
 {
-	// 바닥에 내려앉은 벽돌 기록
+
+	// 바닥에 내려앉은 벽돌 기록과 동시에 색상 정보 저장
 	for (int i = 0; i < 4; i++) {
-		board[nx + Shape[brick][rot][i].x][ny + Shape[brick][rot][i].y] = BRICK;
+
+		int x = nx + Shape[brick][rot][i].x;
+		int y = ny + Shape[brick][rot][i].y;
+		board[x][y] = BRICK;
+		colorsList[x][y] = Shape[brick][rot][i].color;
 	}
+
 	// 수평으로 가득찬 벽돌 제거
 	for (int y = 1; y < BH + 1; y++) {
 		BOOL bFull = TRUE;
@@ -233,19 +248,25 @@ void TestFull()
 		// 한줄이 가득 찼으면 이 줄을 제거한다.
 		if (bFull) {
 			for (int ty = y; ty > 1; ty--) {
-				for (int x = 1; x < 12; x++) {
+				for (int x = 1; x < BW + 1; x++) {
+					colorsList[x][ty] = colorsList[x][ty - 1];
 					board[x][ty] = board[x][ty - 1];
 				}
 			}
+
 			score += 100;
 			if (score > max_score) {
 				write_file();
 			}
-			DrawScreen();
+
+			//DrawScreen();
+			DrawScreenWithColors(colorsList);
 			delay(200);
 		}
 	}
 }
+
+
 
 
 void write_file() {
@@ -283,21 +304,40 @@ int GetGameTime() {
 
 void color(int c)
 {
-	switch (c)
-	{
-	case 0: c = 9; break;
-	case 1:
-	case 2: c = 12; break;
-	case 3:
-	case 4: c = 14; break;
-	case 5: c = 10; break;
-	case 6: c = 13; break;
-	default: c = 7; break;
-	}
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), c);
 }
 
 void playtime() {
 	gotoxy(30, 7);
 	printf("게임 시간: %d초", GetGameTime());
+}
+
+void DrawScreenWithColors(int colorList[BW + 2][BH + 2])
+{
+	color(7);
+	for (int x = 1; x < 11; x++) {
+		for (int y = 0; y < BH + 1; y++) {
+			gotoxy(BX + x * 2, BY + y);
+
+			if (colorList[x][y] == 0) {  //!=
+				//color(colorList[x][y]);
+				board[x][y] = EMPTY;
+				puts(arTile[EMPTY]);
+			}
+			else {
+				board[x][y] = BRICK;
+				color(colorList[x][y]);
+				printf(arTile[board[x][y]]);
+			}
+		}
+	}
+	color(7);
+	read_file();
+	putsxy(30, 3, "Tetris Ver 1.0");
+	gotoxy(30, 4);
+	printf("현재 점수: %d", score);
+	gotoxy(30, 5);
+	printf("난이도: ");
+	gotoxy(30, 6);
+	printf("최고 기록: %d", max_score);
 }
