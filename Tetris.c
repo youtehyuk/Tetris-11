@@ -5,6 +5,8 @@
 #include <windows.h>
 #include <time.h>
 #include <stdbool.h>
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
 
 
 #define randomize() srand((unsigned)time(NULL))
@@ -39,6 +41,7 @@ void DrawScreenWithColors(int colorsToRemove[BW + 2][BH + 2]);
 int ControlSpeed(int score); //속도 조절
 void InitializeNextBrick();
 void InitializeAfterBrick();
+void BGM();//BGM 실행
 
 
 void PrintNextBrick(BOOL Show);
@@ -78,12 +81,13 @@ int main()
 {
 	int nFrame, nStay;
 	int x, y;
+	BGM();
 	showcursor(FALSE);
 	randomize();
 	clrscr();
 	read_file();//프로그램 시작되면 최고기록 읽기
 	startTime = time(NULL);
-
+	
 	// 가장자리는 벽, 나머지는 빈 공간으로 초기화한다. 칸의 상태가 벽인지 비어있는지 초기화하는 과정
 	for (x = 0; x < BW + 2; x++) {
 		for (y = 0; y < BH + 2; y++) {
@@ -137,12 +141,14 @@ int main()
 			delay(1000 / n);
 		}
 	}
+
 	delay(1000);
 	clrscr();// 게임 실패하면 여기에 있는 코드 실행, 실패화면 만들 때 다루는 부분
 	putsxy(30, 12, "G A M E  O V E R");
 	gotoxy(30, 12);
 	printf("게임 점수: %d점. 최고 기록: %d", score, max_score);
 	showcursor(TRUE);
+	
 }
 
 void DrawScreen()//게임판을 출력하는 함수, 일단 게임 초기화될때 한번 사용.
@@ -221,6 +227,9 @@ void PrintBrick(BOOL Show) {// 떨어지는 블록 출력하는 함수
 	color(7); // 기본 텍스트 색상으로 되돌리기
 }
 
+void BGM() {
+	PlaySound(TEXT("TetrisBGM"), NULL , SND_FILENAME | SND_ASYNC | SND_LOOP);//BGM구현 'TetrisBGM' wav파일 다운 후 비주얼 파일에 넣으면 파일 실행
+}
 
 void PrintNextBrick(BOOL Show) {
 	for (int x = 29; x < 45; x++) {
