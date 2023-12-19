@@ -4,8 +4,8 @@
 #include <conio.h>
 #include <windows.h>
 #include <time.h>
-#include <stdbool.h>
-
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
 
 #define randomize() srand((unsigned)time(NULL))
 #define random(n) (rand() % (n))
@@ -30,28 +30,26 @@ int GetAround(int x, int y, int b, int r);
 BOOL MoveDown();
 void TestFull();
 void DrawScreen();
-
-void write_file();  //파일 없으면 쓰기
-void read_file();   //파일에 저장된 스코어 읽기
-int GetGameTime();
-void color(int c); //색깔 변하는 코드, 1이면 1에 해당하는 색깔으로 변하기. 7은 흰색
-void DrawScreenWithColors(int colorsToRemove[BW + 2][BH + 2]);
+void write_file();  //기록 저장
+void read_file();   //기록 읽기
+int GetGameTime(); //게임 시간을 기록
+void color(int c); //색깔 변하는 코드
+void DrawScreenWithColors(int colorsToRemove[BW + 2][BH + 2]); //줄 제거 후 색깔 있는 블록 출력
 int ControlSpeed(int score); //속도 조절
-void InitializeNextBrick();
-void InitializeAfterBrick();
+void InitializeNextBrick(); //다음 블록 생성
+void InitializeAfterBrick(); //다다음 블록 생성
+void PrintNextBrick(BOOL Show); //다음 블록 미리보기
+void PrintAfterBrick(BOOL Show); //다다음 블록 미리보기
+void PrintInfo(); //오른쪽 윗 부분의 정보 출력
+char checkGrade(int score); //점수에 따른 난이도
+void BGM();
 
-
-void PrintNextBrick(BOOL Show);
-void PrintAfterBrick(BOOL Show);
-void PrintInfo();
-char checkGrade(int score);
-
-//블록 자체에 색상을 추가
+//블록 자체에 색상 추가
 struct Point {
 	int x, y;
 	int color;
 };
-//블록 자체
+
 struct Point Shape[][4][4] = {
 	{ { 0,0,1,1,0,1,2,0,1,-1,0,1 },{ 0,0,1,0,1,1,0,-1,1,0,-2,1 },{ 0,0,1,1,0,1,2,0,1,-1,0,1 },{ 0,0,1,0,1,1,0,-1,1,0,-2 ,1} },
 	{ { 0,0,2,1,0,2,0,1,2,1,1,2 },{ 0,0,2,1,0,2,0,1,2,1,1,2 },{ 0,0,2,1,0,2,0,1,2,1,1,2 },{ 0,0,2,1,0,2,0,1,2,1,1,2 } },
@@ -62,22 +60,23 @@ struct Point Shape[][4][4] = {
 	{ { 0,0,12,-1,0,12,1,0,12,0,1,12 },{ 0,0,12,0,-1,12,0,1,12,1,0,12 },{ 0,0,12,-1,0,12,1,0,12,0,-1,12 },{ 0,0,12,-1,0,12,0,-1,12,0,1,12 } },
 };
 
-enum { EMPTY, BRICK, WALL };//블록의 상태
-char arTile[3][4] = { "  ","■","□" }; //블록의 형태
+enum { EMPTY, BRICK, WALL }; //블록의 상태
+char arTile[3][4] = { "  ","■","□" };  //블록의 형태
 int board[BW + 2][BH + 2]; //게임판의 영역
 int nx, ny;
 int brick, rot;
 int score = 0, max_score = 0; //점수
 time_t startTime;
 int colorsList[BW + 2][BH + 2] = {};// 출력할 때 판의 있는 모든 블록의 색깔을 저장하기 위한 리스트
-int nextBrick;
-int afterBrick;
-char grade;
+int nextBrick; //다음 블록
+int afterBrick; //다다음 블록
+char grade; //난이도
 
 int main()
 {
 	int nFrame, nStay;
 	int x, y;
+	BGM();
 	showcursor(FALSE);
 	randomize();
 	clrscr();
@@ -96,13 +95,15 @@ int main()
 		}
 	}
 
+	//게임 준비
 	InitializeNextBrick();
 	InitializeAfterBrick();
-	DrawScreen();//초기화 상태에서 화면 출력
+	DrawScreen();
 	nFrame = 20;
+
 	// 전체 게임 루프
 	for (; 1;) {
-		if (score > max_score) {//최고점 찍을 때 파일을 써서 기록을 저장한다.
+		if (score > max_score) { //최고 스코어 저장
 			write_file();
 			read_file();
 		}
@@ -111,10 +112,11 @@ int main()
 		ny = 3;
 		rot = 0;
 
-		PrintBrick(TRUE);//떨어지는 블록 출력하는 함수
+		//다음, 다다음 블록 출력
+		PrintBrick(TRUE); //떨어지는 블록 출력하는 함수
 		InitializeNextBrick();
-		PrintNextBrick(TRUE);
 
+		//다다음 블록을 다음 블록에 저장
 		int save = afterBrick;
 		nextBrick = save;
 		PrintNextBrick(TRUE);
@@ -137,32 +139,36 @@ int main()
 			delay(1000 / n);
 		}
 	}
-	delay(1000);
-	clrscr();// 게임 실패하면 여기에 있는 코드 실행, 실패화면 만들 때 다루는 부분
-	putsxy(30, 12, "G A M E  O V E R");
-	gotoxy(30, 12);
-	printf("게임 점수: %d점. 최고 기록: %d", score, max_score);
+	delay(500); //게임 끝날 때 반응 시간 주기
+	clrscr();// 아래는 게임 실패화면
+
+	printf("=====================================\n");
+	printf("           G A M E  O V E R\n");
+	printf("=====================================\n");
+	printf(" 점수: %d\n", score);
+	printf(" 최고 기록: %d\n", max_score);
+	printf(" 게임 시간: %d초 \n", GetGameTime());
+	printf(" 도달한 난이도: %c \n", checkGrade(GetGameTime()));
+	printf("=====================================\n");
 	showcursor(TRUE);
 }
 
-void DrawScreen()//게임판을 출력하는 함수, 일단 게임 초기화될때 한번 사용.
+void DrawScreen()//게임판을 출력하는 함수
 {
 	color(7);
 	for (int x = 0; x < BW + 2; x++) {
-		for (int y = 0; y < BH + 2; y++) { //게임 영역안에서 작업
+		for (int y = 0; y < BH + 2; y++) {
 			color(7);
 			gotoxy(BX + x * 2, BY + y);
-			//putsxy(BX + x * 2, BY + y, arTile[board[x][y]]);
-			printf(arTile[board[x][y]]);//좌표에 해당하는 모양을 출력한다.
+			printf(arTile[board[x][y]]);
 		}
 	}
-	//오른쪽 위 부분에 해당되는 영역
-	putsxy(30, 3, "Tetris Ver 1.0"); //putsxy는 커서를 해당 좌표로 옮기고 문구를 출력할 때 사용, %d,%f 같은 숫자를 출력 못함
-	putsxy(29, 10, "Next Brick: ");
-	putsxy(29, 16, "After Next Brick:");
+	putsxy(30, 3, "Tetris Ver 2.0");
+	putsxy(29, 10, "다음 블록: ");
+	putsxy(29, 16, "다다음 블록:");
 }
 
-BOOL ProcessKey()// 게임 컨트롤 부분,키보드 인식?,아마 다룰 필요없음
+BOOL ProcessKey()
 {
 	if (kbhit()) {
 		int ch = getch();
@@ -210,26 +216,32 @@ BOOL ProcessKey()// 게임 컨트롤 부분,키보드 인식?,아마 다룰 필�
 	return FALSE;
 }
 
-void PrintBrick(BOOL Show) {// 떨어지는 블록 출력하는 함수
+// 떨어지는 블록 출력하는 함수
+void PrintBrick(BOOL Show) {
 	PrintInfo();
 	for (int i = 0; i < 4; i++) {
 		int blockColor = Shape[brick][rot][i].color; // 블록의 색상 정보 가져오기
 		color(blockColor);
-		gotoxy(BX + (Shape[brick][rot][i].x + nx) * 2, BY + Shape[brick][rot][i].y + ny);//떨어지는 좌표,여기에서 완쪽 중간에 해당
-		puts(arTile[Show ? BRICK : EMPTY]);//블록 출력? 
+		gotoxy(BX + (Shape[brick][rot][i].x + nx) * 2, BY + Shape[brick][rot][i].y + ny);//떨어지는 좌표
+		puts(arTile[Show ? BRICK : EMPTY]);
 	}
 	color(7); // 기본 텍스트 색상으로 되돌리기
 }
 
+void BGM() {
+	PlaySound(TEXT("TetrisBGM"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);//BGM구현 'TetrisBGM' wav파일 다운 후 비주얼 파일에 넣으면 파일 실행
+}
 
+//다음 블록 출력
 void PrintNextBrick(BOOL Show) {
+	//공간 초기화
 	for (int x = 29; x < 45; x++) {
 		for (int y = 11; y < 15; y++) {
 			gotoxy(x, y);
 			puts(arTile[EMPTY]);
 		}
 	}
-
+	//블록 출력
 	for (int i = 0; i < 4; i++) {
 		int blockColor = Shape[nextBrick][rot][i].color; // 블록의 색상 정보 가져오기
 		color(blockColor);
@@ -239,13 +251,17 @@ void PrintNextBrick(BOOL Show) {
 	color(7); // 기본 텍스트 색상으로 되돌리기
 }
 
+//다다음 블록 출력
 void PrintAfterBrick(BOOL Show) {
+	//공간 초기화
 	for (int x = 29; x < 45; x++) {
 		for (int y = 18; y < 22; y++) {
 			gotoxy(x, y);
 			puts(arTile[EMPTY]);
 		}
 	}
+
+	//블록 출력
 	for (int i = 0; i < 4; i++) {
 		int blockColor = Shape[afterBrick][rot][i].color; // 블록의 색상 정보 가져오기
 		color(blockColor);
@@ -254,7 +270,8 @@ void PrintAfterBrick(BOOL Show) {
 	}
 	color(7); // 기본 텍스트 색상으로 되돌리기
 }
-int GetAround(int x, int y, int b, int r)//돌 수 있는지 확인하는 함수, 아마 다룰 필요없음
+
+int GetAround(int x, int y, int b, int r)
 {
 	int k = EMPTY;
 
@@ -288,12 +305,11 @@ void TestFull()
 		board[x][y] = BRICK;
 		colorsList[x][y] = Shape[brick][rot][i].color;
 	}
-
 	score += 20;
 	// 수평으로 가득찬 벽돌 제거
 	for (int y = 1; y < BH + 1; y++) {
 		BOOL bFull = TRUE;
-		for (int x = 1; x < 12; x++) {  //12 원래 BW
+		for (int x = 1; x < 12; x++) {
 			if (board[x][y] == EMPTY) {
 				bFull = FALSE;
 				break;
@@ -307,9 +323,10 @@ void TestFull()
 					board[x][ty] = board[x][ty - 1];
 				}
 			}
-			score += 100;//줄이 제거되면 점수 더한다.
+			score += 100;//줄이 제거되면 점수 더한다
 
-			if (score > max_score) {//최고점 찍을 때 파일을 써서 기록을 저장한다.
+			//최고점 기록 저장
+			if (score > max_score) {
 				write_file();
 				read_file();
 			}
@@ -319,7 +336,7 @@ void TestFull()
 	}
 }
 
-
+//최고 기록 저장
 void write_file() {
 #pragma warning(disable:4996)
 	FILE* fp;
@@ -328,6 +345,7 @@ void write_file() {
 	fclose(fp);
 }
 
+//최고 기록 읽기
 void read_file()
 {
 #pragma warning(disable:4996)
@@ -349,12 +367,13 @@ int GetGameTime() {
 	return (int)(currentTime - startTime);
 }
 
+//색상 변경
 void color(int c)
 {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), c);
 }
 
-
+//색상 정보를 가진 블록을 출력
 void DrawScreenWithColors(int colorList[BW + 2][BH + 2])
 {
 	color(7);
@@ -362,12 +381,13 @@ void DrawScreenWithColors(int colorList[BW + 2][BH + 2])
 		for (int y = 1; y < BH + 1; y++) {
 			gotoxy(BX + x * 2, BY + y);
 
-			if (colorList[x][y] == 0) {//색이 저장되어 있지 않으면 빈칸으로 설정한다.
+			if (colorList[x][y] == 0) {
 				board[x][y] = EMPTY;
 				puts(arTile[EMPTY]);
 			}
+
 			else {
-				board[x][y] = BRICK;//블록이면 그 색깔을 유지하고 줄이 제거된 상태에서 출력한다
+				board[x][y] = BRICK;   //블록이면 그 색깔을 유지하고 줄이 제거된 상태에서 출력한다
 				color(colorList[x][y]);
 				printf(arTile[board[x][y]]);
 			}
@@ -388,15 +408,17 @@ int ControlSpeed(int score) {
 	return speed;
 }
 
-
+//다음 블록 생성
 void InitializeNextBrick() {
 	nextBrick = random(sizeof(Shape) / sizeof(Shape[0]));
 }
 
+//다다음 블록 생성
 void InitializeAfterBrick() {
 	afterBrick = random(sizeof(Shape) / sizeof(Shape[0]));
 }
 
+//게임에서 출력할 정보 모음
 void PrintInfo() {
 	grade = checkGrade(score);
 	gotoxy(30, 4);
@@ -409,6 +431,7 @@ void PrintInfo() {
 	printf("게임 시간: %d초", GetGameTime());
 }
 
+//난이도 반환
 char checkGrade(int score) {
 	char grade;
 	if (score > 6000) 	grade = 'S';
@@ -420,3 +443,4 @@ char checkGrade(int score) {
 	else grade = 'F';
 	return grade;
 }
+
