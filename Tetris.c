@@ -103,7 +103,7 @@ int main()
 
 	// 전체 게임 루프
 	for (; 1;) {
-		if (score > max_score) { //최고 스코어 저장
+		if (score > max_score) {
 			write_file();
 			read_file();
 		}
@@ -325,11 +325,6 @@ void TestFull()
 			}
 			score += 100;//줄이 제거되면 점수 더한다
 
-			//최고점 기록 저장
-			if (score > max_score) {
-				write_file();
-				read_file();
-			}
 			DrawScreenWithColors(colorsList);//전에 모든 블록에 저장되어 있는 색깔 리스트를 전달하고 색깔 있는 블록으로 출력하기
 			delay(200);
 		}
@@ -443,4 +438,3 @@ char checkGrade(int score) {
 	else grade = 'F';
 	return grade;
 }
-
