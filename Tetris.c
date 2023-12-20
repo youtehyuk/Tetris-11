@@ -148,7 +148,7 @@ int main()
 	printf(" 점수: %d\n", score);
 	printf(" 최고 기록: %d\n", max_score);
 	printf(" 게임 시간: %d초 \n", GetGameTime());
-	printf(" 도달한 난이도: %c \n", checkGrade(GetGameTime()));
+	printf(" 도달한 난이도: %c \n", grade);
 	printf("=====================================\n");
 	showcursor(TRUE);
 }
